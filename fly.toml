@@ -9,7 +9,7 @@ primary_region = "sin"  # Singapore (closest to Indonesia)
 
 [env]
   NODE_ENV = "production"
-  OPENCLAW_CONFIG_PATH = "/app/config.json5"
+  NODE_OPTIONS = "--max-old-space-size=1536"
 
 [http_service]
   internal_port = 8080
