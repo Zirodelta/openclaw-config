@@ -1,41 +1,23 @@
-# Fly.io deployment config for OpenClaw Gateway
-# https://fly.io/docs/reference/configuration/
+# fly.toml app configuration file generated for openclaw-config on 2026-02-05T12:39:39Z
+#
+# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
+#
 
-app = "openclaw-zirodelta"
-primary_region = "sin"  # Singapore (closest to Indonesia)
+app = 'openclaw-config'
+primary_region = 'ams'
 
 [build]
-  dockerfile = "Dockerfile"
-
-[env]
-  NODE_ENV = "production"
-  OPENCLAW_CONFIG_PATH = "/app/config.yaml"
 
 [http_service]
   internal_port = 8080
   force_https = true
-  auto_stop_machines = false  # Keep running for WebSocket connections
+  auto_stop_machines = 'stop'
   auto_start_machines = true
-  min_machines_running = 1
-  
-  [http_service.concurrency]
-    type = "connections"
-    hard_limit = 1000
-    soft_limit = 800
+  min_machines_running = 0
+  processes = ['app']
 
 [[vm]]
-  cpu_kind = "shared"
+  memory = '1gb'
+  cpu_kind = 'shared'
   cpus = 1
-  memory_mb = 512
-
-# Health check
-[[services.http_checks]]
-  interval = "10s"
-  timeout = "2s"
-  path = "/health"
-  method = "GET"
-
-# Metrics (optional)
-[metrics]
-  port = 9091
-  path = "/metrics"
+  memory_mb = 1024
