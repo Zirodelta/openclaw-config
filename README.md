@@ -5,84 +5,70 @@ Multi-tenant OpenClaw Gateway for Zirodelta's AI trading assistant.
 ## Architecture
 
 ```
-Zirodelta Users → Frontend → Backend → OpenClaw Gateway → Claude/GPT
+Zirodelta Users → Frontend → Backend → OpenClaw Gateway → Claude
                                               ↓
                                      Tools (via zirodelta API)
 ```
 
 Each user gets their own isolated session with persistent memory.
 
-## Deployment (Fly.io)
+## Deployment (Railway)
 
-### Prerequisites
+We use the official [OpenClaw Railway Template](https://railway.com/deploy/openclaw-railway-template).
 
-1. Install Fly CLI: `brew install flyctl`
-2. Login: `fly auth login`
+### Current Deployment
 
-### First-time Setup
+- **URL**: `https://clawdbot-railway-template-production-80832.up.railway.app`
+- **Region**: Asia (Singapore)
 
-```bash
-# Create the app
-fly launch --no-deploy
+### Setup Steps
 
-# Set secrets
-fly secrets set OPENCLAW_GATEWAY_TOKEN="your-secure-token"
-fly secrets set ANTHROPIC_API_KEY="sk-ant-..."
-fly secrets set ZIRODELTA_API_URL="https://api.zirodelta.xyz"
+1. Deploy from Railway template
+2. Set `SETUP_PASSWORD` in Railway Variables
+3. Go to `/setup` and configure:
+   - Anthropic API key
+   - Enable chat completions endpoint
+4. Get `OPENCLAW_GATEWAY_TOKEN` from Railway Variables
 
-# Deploy
-fly deploy
+### Gateway Config
+
+Enable the chat completions API in the gateway config:
+
+```json
+{
+  "gateway": {
+    "http": {
+      "endpoints": {
+        "chatCompletions": {
+          "enabled": true
+        }
+      }
+    }
+  }
+}
 ```
-
-### Updates
-
-```bash
-fly deploy
-```
-
-### Logs
-
-```bash
-fly logs
-```
-
-## Configuration
-
-- `config.yaml` - Main OpenClaw Gateway config
-- `fly.toml` - Fly.io deployment config
-- `Dockerfile` - Container build
-
-## Environment Variables
-
-| Variable | Description |
-|----------|-------------|
-| `OPENCLAW_GATEWAY_TOKEN` | Auth token for backend to call Gateway |
-| `ANTHROPIC_API_KEY` | Claude API key |
-| `ZIRODELTA_API_URL` | Backend API base URL |
 
 ## Backend Integration
 
-The zirodelta backend should call:
+The zirodelta backend calls:
 
 ```
-POST https://openclaw-zirodelta.fly.dev/v1/chat/completions
+POST https://clawdbot-railway-template-production-80832.up.railway.app/v1/chat/completions
 Headers:
   Authorization: Bearer ${OPENCLAW_GATEWAY_TOKEN}
   x-openclaw-session-key: ziro:user:${user_id}
-  x-openclaw-agent-id: delta
+  x-openclaw-agent-id: main
+  Content-Type: application/json
 Body:
-  { "model": "openclaw:delta", "messages": [...], "stream": true }
+  { "model": "openclaw", "messages": [...], "stream": true }
 ```
 
-## Local Development
+## Environment Variables (Backend)
 
-```bash
-# Install OpenClaw
-npm install -g openclaw
-
-# Run locally
-ANTHROPIC_API_KEY=sk-ant-... openclaw gateway --config config.yaml
-```
+| Variable | Description |
+|----------|-------------|
+| `OPENCLAW_GATEWAY_URL` | `https://clawdbot-railway-template-production-80832.up.railway.app` |
+| `OPENCLAW_GATEWAY_TOKEN` | Auth token from Railway Variables |
 
 ## Session Isolation
 
@@ -93,12 +79,22 @@ This ensures:
 - Separate memory/context
 - No data leakage between users
 
-## Tools Available
+## Agent Capabilities
 
-| Tool | Description |
-|------|-------------|
-| `getTopOpportunities` | List best funding rate arbitrage opportunities |
-| `getPairDetail` | Get detailed analysis of a trading pair |
-| `getPortfolioSummary` | View user's portfolio (requires auth) |
-| `executeHedge` | Execute a hedge trade (requires auth) |
-| `navigateTo` | Navigate user to a page in the app |
+The Delta agent can:
+- Answer questions about funding rate arbitrage
+- Explain trading concepts
+- Guide users through the platform
+- (Future) Execute trades with user approval
+
+## Local Development
+
+```bash
+# Install OpenClaw
+npm install -g openclaw
+
+# Run locally with config
+openclaw gateway
+```
+
+Then configure via `http://localhost:18789/setup`
