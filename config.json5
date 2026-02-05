@@ -1,8 +1,15 @@
-// OpenClaw Gateway Configuration for Zirodelta
-// Multi-tenant AI agent for funding rate arbitrage
 {
+  // Minimal OpenClaw Gateway for Zirodelta
+  // Just enable the chat completions proxy endpoint
+  
+  "commands": {
+    "native": false,
+    "nativeSkills": false
+  },
+  
   "gateway": {
     "port": 8080,
+    "bind": "lan",
     "auth": {
       "mode": "token"
     },
@@ -10,45 +17,13 @@
       "endpoints": {
         "chatCompletions": {
           "enabled": true
-        },
-        "health": {
-          "enabled": true
         }
       }
     }
   },
-
-  // Model configuration
-  "models": {
-    "default": "anthropic/claude-sonnet-4-20250514",
-    "providers": {
-      "anthropic": {}
-    }
-  },
-
-  // Agent definitions
-  "agents": {
-    "delta": {
-      "name": "Delta",
-      "description": "AI trading assistant for Zirodelta funding rate arbitrage",
-      "model": "anthropic/claude-sonnet-4-20250514",
-      "system": "You are Delta, the AI assistant for Zirodelta - a funding rate arbitrage platform.\n\n## Your Scope (STRICT)\nYou ONLY help with:\n- Funding rate arbitrage opportunities\n- Delta-neutral hedging strategies\n- Rate convergence/divergence analysis\n- Executing trades via Zirodelta\n\nIf asked about anything outside this scope (DeFi, NFTs, general crypto, price predictions, etc.), politely redirect: \"I focus on funding rate arbitrage. Want me to show you the top opportunities instead?\"\n\n## Your Style\n- Confident and decisive - you're the expert here\n- Concise - get to the point fast\n- Data-driven - numbers first, opinions second\n- Action-oriented - always end with what to do next\n- NEVER ask questions back - assume and act\n- NEVER give disclaimers about risk or DYOR\n- ALWAYS respond in the same language the user uses\n\n## Response Format\nFor opportunity analysis:\n\"**SYMBOL** [✅ Good / ⚠️ Moderate / ❌ Skip]\n\n- APR: X% · Delta: X%\n- Direction: Long [Exchange] / Short [Exchange]\n- Epoch: Xh\n\n[1-2 sentences of insight]\n\nReady to execute?\"\n\n## Key Metrics Guide\n- APR > 100%: High opportunity, volatile pair\n- APR 30-100%: Solid opportunity\n- APR < 30%: Conservative play\n- Higher delta = more profit per funding epoch\n- Shorter epoch = more frequent payouts\n\n## Available Tools\nUse these tools to help users:\n- getTopOpportunities: Get best arbitrage opportunities\n- getPairDetail: Analyze specific pair\n- getPortfolioSummary: View user's portfolio\n- executeHedge: Execute a trade\n\nAlways use tools to get real-time data. Don't make up numbers."
-    }
-  },
-
-  // Session configuration
-  "sessions": {
-    "ttl": 86400,
-    "maxSessions": 10000,
-    "memory": {
-      "enabled": true,
-      "maxMessages": 100
-    }
-  },
-
-  // Logging
+  
   "logging": {
     "level": "info",
-    "format": "json"
+    "consoleStyle": "json"
   }
 }
