@@ -1,0 +1,185 @@
+# OpenClaw Gateway Configuration for Zirodelta
+# Multi-tenant AI agent for funding rate arbitrage
+
+gateway:
+  port: 8080
+  
+  auth:
+    mode: token
+    token: ${OPENCLAW_GATEWAY_TOKEN}
+  
+  http:
+    endpoints:
+      chatCompletions:
+        enabled: true
+      health:
+        enabled: true
+
+# Model configuration
+models:
+  default: anthropic/claude-sonnet-4-20250514
+  
+  providers:
+    anthropic:
+      apiKey: ${ANTHROPIC_API_KEY}
+
+# Agent definitions
+agents:
+  # Main trading assistant
+  delta:
+    name: "Delta"
+    description: "AI trading assistant for Zirodelta funding rate arbitrage"
+    
+    model: anthropic/claude-sonnet-4-20250514
+    
+    system: |
+      You are Delta, the AI assistant for Zirodelta - a funding rate arbitrage platform.
+      
+      ## Your Scope (STRICT)
+      You ONLY help with:
+      - Funding rate arbitrage opportunities
+      - Delta-neutral hedging strategies
+      - Rate convergence/divergence analysis
+      - Executing trades via Zirodelta
+      
+      If asked about anything outside this scope (DeFi, NFTs, general crypto, price predictions, etc.), 
+      politely redirect: "I focus on funding rate arbitrage. Want me to show you the top opportunities instead?"
+      
+      ## Your Style
+      - Confident and decisive - you're the expert here
+      - Concise - get to the point fast
+      - Data-driven - numbers first, opinions second
+      - Action-oriented - always end with what to do next
+      - NEVER ask questions back - assume and act
+      - NEVER give disclaimers about risk or DYOR
+      - ALWAYS respond in the same language the user uses
+      
+      ## Response Format
+      For opportunity analysis:
+      "**SYMBOL** [✅ Good / ⚠️ Moderate / ❌ Skip]
+      
+      - APR: X% · Delta: X%
+      - Direction: Long [Exchange] / Short [Exchange]
+      - Epoch: Xh
+      
+      [1-2 sentences of insight]
+      
+      Ready to execute?"
+      
+      ## Key Metrics Guide
+      - APR > 100%: High opportunity, volatile pair
+      - APR 30-100%: Solid opportunity
+      - APR < 30%: Conservative play
+      - Higher delta = more profit per funding epoch
+      - Shorter epoch = more frequent payouts
+      
+      ## Available Tools
+      Use these tools to help users:
+      - getTopOpportunities: Get best arbitrage opportunities
+      - getPairDetail: Analyze specific pair
+      - getPortfolioSummary: View user's portfolio
+      - executeHedge: Execute a trade
+      
+      Always use tools to get real-time data. Don't make up numbers.
+    
+    # Tool definitions
+    tools:
+      - name: getTopOpportunities
+        description: "Get the top funding rate arbitrage opportunities"
+        parameters:
+          type: object
+          properties:
+            exchangePair:
+              type: string
+              description: "Exchange pair filter (e.g., 'kucoin-bybit')"
+            limit:
+              type: number
+              description: "Number of results (default: 5)"
+            sortBy:
+              type: string
+              enum: ["apr", "funding_delta", "epoch_hours"]
+              description: "Sort criteria"
+            minApr:
+              type: number
+              description: "Minimum APR filter"
+        http:
+          method: GET
+          url: ${ZIRODELTA_API_URL}/opportunities
+          query:
+            exchange_pair: "{{exchangePair}}"
+            limit: "{{limit}}"
+            sort_by: "{{sortBy}}"
+            min_apr: "{{minApr}}"
+      
+      - name: getPairDetail
+        description: "Get detailed analysis of a specific trading pair"
+        parameters:
+          type: object
+          properties:
+            symbol:
+              type: string
+              description: "The trading pair symbol (e.g., 'BTC', 'ETH')"
+            exchangePair:
+              type: string
+              description: "Exchange pair (e.g., 'kucoin-bybit')"
+          required: ["symbol"]
+        http:
+          method: GET
+          url: ${ZIRODELTA_API_URL}/pairs/{{symbol}}
+          query:
+            exchange_pair: "{{exchangePair}}"
+      
+      - name: getPortfolioSummary
+        description: "Get the user's portfolio summary including positions and PnL"
+        parameters:
+          type: object
+          properties: {}
+        http:
+          method: GET
+          url: ${ZIRODELTA_API_URL}/portfolio/summary
+          headers:
+            Authorization: "Bearer {{_context.userToken}}"
+      
+      - name: executeHedge
+        description: "Execute a funding rate arbitrage hedge trade"
+        parameters:
+          type: object
+          properties:
+            symbol:
+              type: string
+              description: "Trading pair symbol"
+            amount:
+              type: number
+              description: "Amount in USDT"
+            exchangePair:
+              type: string
+              description: "Exchange pair for the hedge"
+          required: ["symbol", "amount"]
+        http:
+          method: POST
+          url: ${ZIRODELTA_API_URL}/executions
+          headers:
+            Authorization: "Bearer {{_context.userToken}}"
+            Content-Type: "application/json"
+          body:
+            symbol: "{{symbol}}"
+            amount: "{{amount}}"
+            exchange_pair: "{{exchangePair}}"
+
+# Session configuration
+sessions:
+  # Sessions persist for 24 hours of inactivity
+  ttl: 86400
+  
+  # Max sessions per gateway instance
+  maxSessions: 10000
+  
+  # Memory per session
+  memory:
+    enabled: true
+    maxMessages: 100
+
+# Logging
+logging:
+  level: info
+  format: json
